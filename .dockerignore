@@ -11,3 +11,4 @@ pretrained
 **/dist
 **/*_pb2*.py
 **/*_pb2*.pyi
+**/src/yoloxft

@@ -20,10 +20,15 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=trainer/uv.lock,target=uv.lock \
     uv sync --locked --extra engine --no-install-project
 
-# proto/ is optional until the service contract exists.
-RUN --mount=type=bind,source=.,target=/ctx \
-    if [ -d /ctx/proto ]; then cp -r /ctx/proto /app/proto; fi
-# gRPC stub generation (grpc_tools.protoc) goes here.
+COPY proto/ /app/proto/
+RUN mkdir -p /app/trainer/src \
+    && /app/.venv/bin/python -m grpc_tools.protoc \
+        -I /app/proto \
+        --python_out=/app/trainer/src \
+        --grpc_python_out=/app/trainer/src \
+        --pyi_out=/app/trainer/src \
+        /app/proto/yoloxft/v1/trainer.proto \
+    && touch /app/trainer/src/yoloxft/__init__.py /app/trainer/src/yoloxft/v1/__init__.py
 
 COPY trainer/ /app/trainer/
 

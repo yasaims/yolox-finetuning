@@ -55,3 +55,4 @@ yolox = { git = "https://github.com/Megvii-BaseDetection/YOLOX", rev = "6ddff482
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = ["--import-mode=importlib"]

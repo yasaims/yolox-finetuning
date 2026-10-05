@@ -38,11 +38,11 @@ def pytest_configure(config: pytest.Config) -> None:
 
 def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
     for item in items:
-        if "engine" in item.keywords and not _engine_available():
+        if item.get_closest_marker("engine") and not _engine_available():
             item.add_marker(pytest.mark.skip(reason="torch/yolox not installed"))
-        if "gpu" in item.keywords and not _gpu_available():
+        if item.get_closest_marker("gpu") and not _gpu_available():
             item.add_marker(pytest.mark.skip(reason="CUDA not available"))
-        if "needs_weights" in item.keywords and not pretrained_path().is_file():
+        if item.get_closest_marker("needs_weights") and not pretrained_path().is_file():
             item.add_marker(pytest.mark.skip(reason=f"pretrained weights not found: {pretrained_path()}"))
 
 

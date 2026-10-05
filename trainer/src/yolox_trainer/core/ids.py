@@ -8,6 +8,8 @@ from .errors import InvalidArgument
 
 ID_PATTERN = r"^[a-z0-9][a-z0-9-]{0,63}$"
 _ID_RE = re.compile(ID_PATTERN)
+# 64 - len("YYYYMMDD-HHMMSS-") - len("-xxxxxx")
+_MAX_DATASET_PART = 41
 
 
 def validate_id(value: str) -> str:
@@ -18,4 +20,5 @@ def validate_id(value: str) -> str:
 
 def new_model_id(dataset_name: str, now: datetime, rand_hex: str | None = None) -> str:
     suffix = rand_hex if rand_hex is not None else secrets.token_hex(3)
-    return f"{now:%Y%m%d-%H%M%S}-{dataset_name.replace('_', '-')}-{suffix}"
+    dataset = dataset_name.replace("_", "-")[:_MAX_DATASET_PART].rstrip("-")
+    return f"{now:%Y%m%d-%H%M%S}-{dataset}-{suffix}"

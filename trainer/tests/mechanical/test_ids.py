@@ -26,3 +26,10 @@ def test_new_model_id_random_suffix_is_valid_id() -> None:
     model_id = new_model_id("balloon", datetime(2026, 1, 2, 3, 4, 5))
     assert validate_id(model_id) == model_id
     assert len(model_id.rsplit("-", 1)[1]) == 6
+
+
+@pytest.mark.parametrize("dataset", ["a" * 64, "a" * 40 + "_" + "b" * 23, "a" * 40 + "-_" + "b" * 22])
+def test_new_model_id_from_longest_dataset_names_is_valid(dataset: str) -> None:
+    model_id = new_model_id(dataset, datetime(2026, 1, 2, 3, 4, 5), "abc123")
+    assert validate_id(model_id) == model_id
+    assert "--" not in model_id

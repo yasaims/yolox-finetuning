@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from yolox_trainer.core.datasets import DatasetCatalog
-from yolox_trainer.core.errors import InvalidArgument, NotFound
+from yolox_trainer.core.errors import FailedPrecondition, InvalidArgument, NotFound
 
 
 def make_dataset(root: Path, name: str, train: int = 2, val: int = 1, splits: tuple[str, ...] = ("train", "val")) -> None:
@@ -57,3 +57,15 @@ def test_get_errors(tmp_path: Path) -> None:
         catalog.get("../etc")
     with pytest.raises(InvalidArgument):
         catalog.annotation_path("ds", "test")
+
+
+@pytest.mark.parametrize("content", ['{"images": [', '{"images": [], "categories": [{"id": 1}]}', "[]", '{"images": 3, "categories": []}'])
+def test_corrupt_dataset_is_skipped_by_list_and_rejected_by_get(tmp_path: Path, content: str) -> None:
+    make_dataset(tmp_path, "good")
+    make_dataset(tmp_path, "broken")
+    (tmp_path / "broken" / "annotations" / "train.json").write_text(content)
+    catalog = DatasetCatalog(tmp_path)
+
+    assert [i.name for i in catalog.list()] == ["good"]
+    with pytest.raises(FailedPrecondition, match="broken"):
+        catalog.get("broken")

@@ -5,7 +5,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-from .errors import InvalidArgument, NotFound
+from .errors import FailedPrecondition, InvalidArgument, NotFound
 
 SPLITS = ("train", "val")
 _NAME_RE = re.compile(r"[a-z0-9][a-z0-9_-]{0,63}")
@@ -45,15 +45,18 @@ class DatasetCatalog:
         paths = {split: self.annotation_path(name, split) for split in SPLITS}
         if not all(p.is_file() for p in paths.values()):
             raise NotFound(f"dataset not found: {name}")
-        train, val = _load(paths["train"]), _load(paths["val"])
-        categories = sorted(train.get("categories", []), key=lambda c: c["id"])
-        return DatasetInfo(
-            name=name,
-            root=self._root / name,
-            class_names=[c["name"] for c in categories],
-            train_images=len(train.get("images", [])),
-            val_images=len(val.get("images", [])),
-        )
+        try:
+            train, val = _load(paths["train"]), _load(paths["val"])
+            categories = sorted(train.get("categories", []), key=lambda c: c["id"])
+            return DatasetInfo(
+                name=name,
+                root=self._root / name,
+                class_names=[c["name"] for c in categories],
+                train_images=len(train.get("images", [])),
+                val_images=len(val.get("images", [])),
+            )
+        except (OSError, ValueError, KeyError, TypeError, AttributeError) as e:
+            raise FailedPrecondition(f"dataset {name} has unreadable annotations: {e!r}") from e
 
     def list(self) -> list[DatasetInfo]:
         if not self._root.is_dir():
@@ -64,6 +67,6 @@ class DatasetCatalog:
                 continue
             try:
                 infos.append(self.get(entry.name))
-            except NotFound:
+            except (NotFound, FailedPrecondition):
                 continue
         return infos

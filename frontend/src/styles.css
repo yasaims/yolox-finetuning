@@ -119,3 +119,28 @@ progress {
 .badge-failed {
   color: #cf222e;
 }
+
+.badge-stopped {
+  color: #9a6700;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.card .toolbar {
+  margin-bottom: 0.5rem;
+}
+
+.inline-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+button.danger {
+  color: #cf222e;
+}

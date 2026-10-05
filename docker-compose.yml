@@ -1,0 +1,17 @@
+services:
+  trainer:
+    build:
+      context: .
+      dockerfile: trainer/Dockerfile
+    shm_size: 2gb
+    volumes:
+      - ./datasets:/data/datasets:ro
+      - ./models:/data/models
+      - ./pretrained:/data/pretrained:ro
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]

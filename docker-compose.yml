@@ -4,6 +4,21 @@ services:
       context: .
       dockerfile: trainer/Dockerfile
     shm_size: 2gb
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          import grpc, sys;
+          from grpc_health.v1 import health_pb2, health_pb2_grpc;
+          stub = health_pb2_grpc.HealthStub(grpc.insecure_channel('localhost:50051'));
+          reply = stub.Check(health_pb2.HealthCheckRequest(), timeout=3);
+          sys.exit(0 if reply.status == health_pb2.HealthCheckResponse.SERVING else 1)
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     volumes:
       - ./datasets:/data/datasets:ro
       - ./models:/data/models

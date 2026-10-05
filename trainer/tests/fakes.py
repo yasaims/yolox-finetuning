@@ -5,7 +5,9 @@ import threading
 from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 
+from yolox_trainer.core.coco_metrics import ClassAp, CocoStats, EvaluationMetrics
 from yolox_trainer.core.events import WorkerDone
+from yolox_trainer.core.inference import Detection, PredictResult
 from yolox_trainer.core.supervisor import JobSpec
 
 
@@ -71,3 +73,23 @@ class FakeTrainingRunner:
         if isinstance(message, WorkerDone) and message.weights_path and not Path(message.weights_path).is_absolute():
             return dataclasses.replace(message, weights_path=str(work_dir / message.weights_path))
         return message
+
+
+class FakeInferenceService:
+    """Returns canned results and records the arguments it was called with."""
+
+    def __init__(self) -> None:
+        self.evaluate_calls: list[tuple[str, str, str]] = []
+        self.predict_calls: list[tuple[str, int, float]] = []
+        self.forgotten: list[str] = []
+
+    def evaluate(self, model_id: str, dataset_name: str, split: str) -> EvaluationMetrics:
+        self.evaluate_calls.append((model_id, dataset_name, split))
+        return EvaluationMetrics(CocoStats(*([0.5] * 12)), [ClassAp("cat", 0.4, 0.6)], 3)
+
+    def predict(self, model_id: str, image: bytes, score_threshold: float) -> PredictResult:
+        self.predict_calls.append((model_id, len(image), score_threshold))
+        return PredictResult(640, 480, [Detection(1.0, 2.0, 30.0, 40.0, 0.9, 0, "cat")])
+
+    def forget(self, model_id: str) -> None:
+        self.forgotten.append(model_id)

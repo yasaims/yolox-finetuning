@@ -44,4 +44,4 @@ ENV PATH=/app/.venv/bin:$PATH \
 
 WORKDIR /app/trainer
 
-CMD ["python", "-c", "import yolox"]
+CMD ["python", "-m", "yolox_trainer"]

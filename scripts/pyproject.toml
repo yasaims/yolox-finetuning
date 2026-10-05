@@ -3,11 +3,12 @@ name = "dataset-tools"
 version = "0.1.0"
 description = "Dataset and weights preparation tools"
 requires-python = ">=3.12"
-dependencies = ["pillow"]
+dependencies = ["httpx", "pillow"]
 
 [project.scripts]
 prepare-balloon = "dataset_tools.balloon:main"
 download-weights = "dataset_tools.download_weights:main"
+e2e-smoke = "dataset_tools.e2e_smoke:main"
 
 [dependency-groups]
 dev = ["pytest", "pycocotools"]

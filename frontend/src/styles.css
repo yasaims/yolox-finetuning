@@ -76,3 +76,46 @@ td {
   padding: 0.4rem 0.6rem;
   border-bottom: 1px solid var(--border);
 }
+
+.training-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0 1rem;
+}
+
+.form-grid label:has(input[type="checkbox"]) {
+  flex-direction: row;
+  align-items: center;
+}
+
+progress {
+  width: 100%;
+}
+
+.badge {
+  font-size: 0.75rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 1rem;
+  border: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.badge-running {
+  color: var(--accent);
+}
+
+.badge-succeeded {
+  color: #1a7f37;
+}
+
+.badge-failed {
+  color: #cf222e;
+}

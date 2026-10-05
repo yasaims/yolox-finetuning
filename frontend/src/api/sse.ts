@@ -57,8 +57,8 @@ export function subscribeTrainingEvents(
   for (const type of EVENT_TYPES) {
     source.addEventListener(type, (message) => {
       const data = JSON.parse((message as MessageEvent<string>).data) as Omit<TrainingEvent, "type">;
-      onEvent({ type, ...data } as TrainingEvent);
       if (type === "finished") source.close();
+      onEvent({ type, ...data } as TrainingEvent);
     });
   }
   source.onerror = onError;

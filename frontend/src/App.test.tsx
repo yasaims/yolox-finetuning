@@ -1,17 +1,23 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 
 function renderAt(path: string) {
   return render(
-    <MemoryRouter initialEntries={[path]}>
-      <App />
-    </MemoryRouter>,
+    <QueryClientProvider client={new QueryClient()}>
+      <MemoryRouter initialEntries={[path]}>
+        <App />
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 }
 
 describe("App routes", () => {
+  beforeEach(() => vi.stubGlobal("fetch", vi.fn(() => new Promise(() => {}))));
+  afterEach(() => vi.unstubAllGlobals());
+
   it.each([
     ["/training", "Training"],
     ["/models", "Models"],

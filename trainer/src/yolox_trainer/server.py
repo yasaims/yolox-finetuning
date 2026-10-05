@@ -73,15 +73,16 @@ def _build_engine(
     """Wiring point for the torch-based engine.
 
     `yolox_trainer.engine.build_runtime(config, registry, catalog)` must return
-    `(runner_factory, inference_service)`. Without the engine package, training and
-    inference requests fail with FAILED_PRECONDITION.
+    `(runner_factory, inference_service)`. Without torch/YOLOX, training and inference
+    requests fail with FAILED_PRECONDITION.
     """
     try:
         from .engine import build_runtime
-    except ImportError:
-        log.warning("engine package unavailable; training and inference are disabled")
+
+        return build_runtime(config, registry, catalog)
+    except ImportError as e:
+        log.warning("engine dependencies unavailable (%s); training and inference are disabled", e)
         return _UnavailableRunner, _UnavailableInference()
-    return build_runtime(config, registry, catalog)
 
 
 def serve(config: TrainerConfig) -> None:

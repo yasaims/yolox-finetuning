@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 import torch
 from yolox.data import COCODataset, TrainTransform, ValTransform
 from yolox.exp.default.yolox_tiny import Exp as YoloxTinyExp
@@ -62,7 +64,9 @@ class FinetuneExp(YoloxTinyExp):
             preproc=ValTransform(legacy=bool(kwargs.get("legacy", False))),
         )
 
-    def eval(self, model, evaluator, is_distributed, half=False, return_outputs=False):  # type: ignore[no-untyped-def]
+    def eval(
+        self, model: Any, evaluator: Any, is_distributed: bool, half: bool = False, return_outputs: bool = False
+    ) -> Any:
         result = super().eval(model, evaluator, is_distributed, half, return_outputs=return_outputs)
         stats = result[0] if return_outputs else result
         self.last_eval = (float(stats[0]), float(stats[1]))

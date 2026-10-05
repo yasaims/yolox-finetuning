@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import dataclasses
+import multiprocessing.queues
+import multiprocessing.synchronize
 import threading
+import time
 from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 
 from yolox_trainer.core.coco_metrics import ClassAp, CocoStats, EvaluationMetrics
-from yolox_trainer.core.events import WorkerDone
+from yolox_trainer.core.events import IterProgress, WorkerDone, WorkerStarted
 from yolox_trainer.core.inference import Detection, PredictResult
 from yolox_trainer.core.supervisor import JobSpec
 
@@ -93,3 +96,25 @@ class FakeInferenceService:
 
     def forget(self, model_id: str) -> None:
         self.forgotten.append(model_id)
+
+
+SCRIPTED_ITERS = 200
+
+
+def scripted_worker(
+    spec: JobSpec, out_q: multiprocessing.queues.Queue[object], stop_event: multiprocessing.synchronize.Event
+) -> None:
+    """Child-process target that floods the queue and exits without waiting for the reader."""
+    out_q.put(WorkerStarted(1, SCRIPTED_ITERS))
+    for i in range(SCRIPTED_ITERS):
+        out_q.put(IterProgress(1, i + 1, i + 1, SCRIPTED_ITERS, 0.001, {"total_loss": 1.0}, 416, 0.0))
+    out_q.put(WorkerDone("succeeded", None, 0, 0.0, 0.0, 1, ""))
+
+
+def stop_ignoring_worker(
+    spec: JobSpec, out_q: multiprocessing.queues.Queue[object], stop_event: multiprocessing.synchronize.Event
+) -> None:
+    """Child-process target that never reacts to the stop event."""
+    out_q.put(WorkerStarted(1, 1))
+    while True:
+        time.sleep(0.1)

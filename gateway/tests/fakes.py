@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
 from typing import Any
 
 import grpc
@@ -84,7 +84,7 @@ class FakeTrainerClient:
         self._record("get_current_job")
         return self.current
 
-    async def stream_events(self, job_id: str, after_seq: int) -> AsyncIterator[tuple[str, int, dict[str, Any]]]:
+    async def stream_events(self, job_id: str, after_seq: int) -> AsyncGenerator[tuple[str, int, dict[str, Any]], None]:
         self._record("stream_events", job_id, after_seq)
         for item in self.events:
             yield item

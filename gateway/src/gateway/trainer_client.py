@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import AsyncIterator, Awaitable, Callable, Mapping
+from collections.abc import AsyncGenerator, Awaitable, Callable, Mapping
 from typing import Any, Protocol, TypeVar
 
 import grpc
@@ -47,7 +47,7 @@ class TrainerClient(Protocol):
 
     async def get_current_job(self) -> JobSummary | None: ...
 
-    def stream_events(self, job_id: str, after_seq: int) -> AsyncIterator[EventTuple]:
+    def stream_events(self, job_id: str, after_seq: int) -> AsyncGenerator[EventTuple, None]:
         """Yields (event_type, seq, payload); payload includes `seq` and `time_unix_ms`."""
         ...
 
@@ -146,6 +146,7 @@ class GrpcTrainerClient:
             ("grpc.max_send_message_length", MAX_MESSAGE_BYTES),
             ("grpc.max_receive_message_length", MAX_MESSAGE_BYTES),
         ]
+        self.addr = addr
         self._channel = grpc.aio.insecure_channel(addr, options=options)
         self._stub = pb_grpc.TrainerServiceStub(self._channel)
 
@@ -190,7 +191,7 @@ class GrpcTrainerClient:
         reply = await self._unary(lambda: self._stub.GetCurrentJob(pb.GetCurrentJobRequest()))
         return _job_summary(reply.job) if reply.HasField("job") else None
 
-    async def stream_events(self, job_id: str, after_seq: int) -> AsyncIterator[EventTuple]:
+    async def stream_events(self, job_id: str, after_seq: int) -> AsyncGenerator[EventTuple, None]:
         call = self._stub.StreamTrainingEvents(pb.StreamTrainingEventsRequest(job_id=job_id, after_seq=after_seq))
         try:
             async for message in call:

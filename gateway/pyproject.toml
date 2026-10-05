@@ -13,6 +13,9 @@ dependencies = [
     "pydantic-settings",
 ]
 
+[project.scripts]
+export-openapi = "gateway.export_openapi:main"
+
 [dependency-groups]
 dev = ["pytest", "pytest-asyncio", "httpx", "grpcio-tools==1.84.0"]
 

@@ -2,8 +2,10 @@ from collections.abc import AsyncIterator
 from typing import Any
 
 import grpc
+import httpx
 import pytest
 
+from gateway.main import create_app
 from gateway.trainer_client import GrpcTrainerClient, TrainerError
 from yoloxft.v1 import trainer_pb2 as pb
 from yoloxft.v1 import trainer_pb2_grpc as pb_grpc
@@ -136,3 +138,12 @@ async def test_stream_events_yields_typed_payload_dicts(served: tuple[GrpcTraine
     assert iter_payload["losses"]["total_loss"] == float("inf")
     assert finished_payload["state"] == "SUCCEEDED"
     assert finished_payload["model_id"] == "m1"
+
+
+async def test_app_creates_grpc_client_inside_event_loop(served: tuple[GrpcTrainerClient, FakeServicer]) -> None:
+    addr = served[0].addr
+    app = create_app(lambda: GrpcTrainerClient(addr))
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as http:
+        response = await http.get("/api/datasets")
+    assert response.json()[0]["name"] == "balloon"
+    await app.state.client.close()

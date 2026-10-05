@@ -1,4 +1,26 @@
 services:
+  gateway:
+    build:
+      context: .
+      dockerfile: gateway/Dockerfile
+    environment:
+      TRAINER_ADDR: trainer:50051
+    depends_on:
+      trainer:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          import sys, urllib.request;
+          sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/health', timeout=3).status == 200 else 1)
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
   trainer:
     build:
       context: .

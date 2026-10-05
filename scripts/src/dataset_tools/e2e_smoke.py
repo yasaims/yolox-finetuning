@@ -5,7 +5,6 @@ import json
 import sys
 import time
 from collections.abc import Iterable, Iterator
-from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -14,6 +13,9 @@ import httpx
 
 STOP_DEADLINE_SECONDS = 60
 BUSY_RETRY_SECONDS = 15
+FIRST_ITER_DEADLINE_SECONDS = 300
+# Short enough that deadlines are checked even when the server only sends pings.
+POLL_SECONDS = 5
 
 
 class SmokeFailure(Exception):
@@ -78,30 +80,44 @@ def start_training(client: httpx.Client, dataset: str, epochs: int, name: str) -
         return response.json()["job_id"]
 
 
-@contextmanager
-def open_events(client: httpx.Client, job_id: str, read_timeout: float) -> Iterator[Iterator[SseFrame]]:
-    timeout = httpx.Timeout(read_timeout, connect=10)
-    with client.stream("GET", f"/api/trainings/{job_id}/events", timeout=timeout) as response:
-        check(response.status_code == 200, f"events: {response.status_code}")
-        yield parse_sse(response.iter_lines())
+def stream_events(client: httpx.Client, job_id: str, deadline: float, after_seq: int = 0) -> Iterator[SseFrame]:
+    """Yields job events, reconnecting after quiet periods; raises SmokeFailure past the monotonic `deadline`."""
+    while True:
+        check(time.monotonic() < deadline, f"deadline exceeded while waiting for events of {job_id}")
+        try:
+            with client.stream(
+                "GET",
+                f"/api/trainings/{job_id}/events",
+                params={"after_seq": after_seq},
+                timeout=httpx.Timeout(POLL_SECONDS, connect=10),
+            ) as response:
+                check(response.status_code == 200, f"events: {response.status_code}")
+                for frame in parse_sse(response.iter_lines()):
+                    after_seq = int(frame.id)
+                    yield frame
+                    if frame.event == "finished":
+                        return
+                    check(time.monotonic() < deadline, f"deadline exceeded while waiting for events of {job_id}")
+                return
+        except httpx.ReadTimeout:
+            continue
 
 
-def check_training(client: httpx.Client, dataset: str, epochs: int, timeout: float) -> str:
+def check_training(client: httpx.Client, dataset: str, epochs: int, timeout: float, created: list[str]) -> str:
     """Runs a full training job and returns the registered model id."""
     step(f"training {dataset} for {epochs} epochs")
     job_id = start_training(client, dataset, epochs, "e2e-smoke")
     kinds: list[str] = []
     finished: dict[str, Any] | None = None
-    deadline = time.monotonic() + timeout
-    with open_events(client, job_id, read_timeout=60) as frames:
-        for frame in frames:
-            kinds.append(frame.event)
-            if frame.event == "finished":
-                finished = frame.data
-                break
-            check(time.monotonic() < deadline, f"training did not finish within {timeout:.0f} s")
+    for frame in stream_events(client, job_id, time.monotonic() + timeout):
+        kinds.append(frame.event)
+        if frame.event == "finished":
+            finished = frame.data
+            break
     if finished is None:
         raise SmokeFailure("event stream ended without a finished event")
+    if finished.get("model_id"):
+        created.append(finished["model_id"])
     check(kinds[0] == "started", f"first event was {kinds[0]!r}, expected 'started'")
     check("iter" in kinds, "no iter event received")
     check(kinds.count("eval") == epochs, f"expected {epochs} eval events, got {kinds.count('eval')}")
@@ -152,23 +168,28 @@ def check_predict(client: httpx.Client, model_id: str, image: Path) -> None:
     print(f"    {len(result['detections'])} detections")
 
 
-def check_cancel(client: httpx.Client, dataset: str, epochs: int) -> str:
-    """Stops a running job after its first iter event. Returns the model id it registered, if any."""
+def check_cancel(client: httpx.Client, dataset: str, epochs: int, created: list[str]) -> None:
+    """Stops a running job after its first iter event and expects it to end CANCELLED."""
     step("cancel a running job")
     job_id = start_training(client, dataset, epochs, "e2e-smoke-cancel")
-    stop_deadline: float | None = None
-    with open_events(client, job_id, read_timeout=STOP_DEADLINE_SECONDS) as frames:
-        for frame in frames:
-            if frame.event == "iter" and stop_deadline is None:
-                response = client.post(f"/api/trainings/{job_id}/stop")
-                check(response.status_code == 202, f"stop: {response.status_code}")
-                stop_deadline = time.monotonic() + STOP_DEADLINE_SECONDS
-            if frame.event == "finished":
-                check(stop_deadline is not None, "job finished before the stop request")
-                check(frame.data["state"] == "CANCELLED", f"cancelled job ended as {frame.data['state']}")
-                return frame.data.get("model_id", "")
-            if stop_deadline is not None:
-                check(time.monotonic() < stop_deadline, f"no finished event within {STOP_DEADLINE_SECONDS} s of stop")
+    last_seq = 0
+    for frame in stream_events(client, job_id, time.monotonic() + FIRST_ITER_DEADLINE_SECONDS):
+        check(frame.event != "finished", f"job finished before the first iter: {frame.data}")
+        last_seq = int(frame.id)
+        if frame.event == "iter":
+            break
+    else:
+        raise SmokeFailure("event stream ended before the first iter event")
+    response = client.post(f"/api/trainings/{job_id}/stop")
+    check(response.status_code == 202, f"stop: {response.status_code}")
+
+    deadline = time.monotonic() + STOP_DEADLINE_SECONDS
+    for frame in stream_events(client, job_id, deadline, after_seq=last_seq):
+        if frame.event == "finished":
+            if frame.data.get("model_id"):
+                created.append(frame.data["model_id"])
+            check(frame.data["state"] == "CANCELLED", f"cancelled job ended as {frame.data['state']}")
+            return
     raise SmokeFailure("event stream ended without a finished event")
 
 
@@ -185,15 +206,12 @@ def run(
     check(response.status_code == 200, f"list datasets: {response.status_code}")
     check(any(d["name"] == dataset for d in response.json()), f"dataset {dataset!r} not listed")
 
-    model_id = check_training(client, dataset, epochs, timeout)
-    created.append(model_id)
+    model_id = check_training(client, dataset, epochs, timeout, created)
     check_model(client, model_id, dataset, epochs)
     check_evaluate(client, model_id)
     check_predict(client, model_id, first_val_image(datasets_dir, dataset))
 
-    cancelled_model = check_cancel(client, dataset, epochs)
-    if cancelled_model:
-        created.append(cancelled_model)
+    check_cancel(client, dataset, epochs, created)
 
 
 def cleanup(client: httpx.Client, model_ids: list[str]) -> None:

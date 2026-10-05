@@ -57,3 +57,5 @@ yolox = { git = "https://github.com/Megvii-BaseDetection/YOLOX", rev = "6ddff482
 testpaths = ["tests"]
 pythonpath = ["tests"]
 addopts = ["--import-mode=importlib"]
+# Raised by upstream COCOEvaluator.
+filterwarnings = ["ignore:The torch.cuda.*DtypeTensor constructors:UserWarning"]

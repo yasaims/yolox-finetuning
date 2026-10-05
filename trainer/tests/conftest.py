@@ -46,6 +46,6 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
             item.add_marker(pytest.mark.skip(reason=f"pretrained weights not found: {pretrained_path()}"))
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def pretrained_weights() -> Path:
     return pretrained_path()

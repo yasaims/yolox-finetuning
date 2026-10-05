@@ -1,77 +1,22 @@
-import os
-import threading
 import time
-from dataclasses import replace
 from pathlib import Path
 
 import pytest
+from training_run import RUN_TIMEOUT, Recorder, TrainedJob, make_spec
 
-from yolox_trainer.core.datasets import DatasetCatalog, DatasetInfo
-from yolox_trainer.core.errors import NotFound
+from yolox_trainer.core.datasets import DatasetInfo
 from yolox_trainer.core.events import EpochEval, IterProgress, WorkerDone, WorkerStarted
-from yolox_trainer.core.hyperparams import DEFAULTS
-from yolox_trainer.core.supervisor import JobSpec
 
 pytestmark = [pytest.mark.engine, pytest.mark.gpu, pytest.mark.needs_weights]
 
-DATASET = "balloon"
-RUN_TIMEOUT = 900
 STOP_LIMIT_SECONDS = 30
 
 
-@pytest.fixture
-def balloon() -> DatasetInfo:
-    root = Path(os.environ.get("TRAINER_DATASETS_DIR", "/data/datasets"))
-    try:
-        return DatasetCatalog(root).get(DATASET)
-    except NotFound:
-        pytest.skip(f"dataset {DATASET!r} not found under {root}")
-
-
-def _spec(tmp_path: Path, dataset: DatasetInfo, pretrained: Path) -> JobSpec:
-    hp = replace(DEFAULTS, max_epoch=2, batch_size=4, input_size=320, warmup_epochs=0, no_aug_epochs=1)
-    return JobSpec(
-        job_id="gpu-test",
-        dataset_name=dataset.name,
-        data_dir=str(dataset.root),
-        class_names=list(dataset.class_names),
-        hyperparameters=hp,
-        display_name="gpu-test",
-        work_dir=str(tmp_path / ".work" / "gpu-test"),
-        pretrained_path=str(pretrained),
-    )
-
-
-class _Recorder:
-    def __init__(self) -> None:
-        self.messages: list[object] = []
-        self.exit_code: int | None = None
-        self.exited = threading.Event()
-        self.done_at: float | None = None
-
-    def on_message(self, message: object) -> None:
-        self.messages.append(message)
-        if isinstance(message, WorkerDone):
-            self.done_at = time.monotonic()
-
-    def on_exit(self, code: int | None) -> None:
-        self.exit_code = code
-        self.exited.set()
-
-
-def test_two_epoch_run_streams_progress_and_exports_weights(
-    tmp_path: Path, balloon: DatasetInfo, pretrained_weights: Path
-) -> None:
+def test_two_epoch_run_streams_progress_and_exports_weights(trained_job: TrainedJob, balloon: DatasetInfo) -> None:
     import torch
 
-    from yolox_trainer.engine.process_runner import ProcessTrainingRunner
+    spec, rec = trained_job.spec, trained_job.recorder
 
-    spec = _spec(tmp_path, balloon, pretrained_weights)
-    rec = _Recorder()
-
-    ProcessTrainingRunner().start(spec, rec.on_message, rec.on_exit)
-
-    assert rec.exited.wait(RUN_TIMEOUT)
     assert rec.exit_code == 0
     started, *middle, done = rec.messages
     assert isinstance(started, WorkerStarted) and started.max_epoch == 2
@@ -97,7 +42,7 @@ def test_stop_after_first_iteration_cancels_quickly(
     from yolox_trainer.engine.process_runner import ProcessTrainingRunner
 
     runner = ProcessTrainingRunner()
-    rec = _Recorder()
+    rec = Recorder()
     requested: list[float] = []
 
     def on_message(message: object) -> None:
@@ -106,7 +51,7 @@ def test_stop_after_first_iteration_cancels_quickly(
             requested.append(time.monotonic())
             runner.request_stop()
 
-    runner.start(_spec(tmp_path, balloon, pretrained_weights), on_message, rec.on_exit)
+    runner.start(make_spec(tmp_path, balloon, pretrained_weights), on_message, rec.on_exit)
 
     assert rec.exited.wait(RUN_TIMEOUT)
     done = rec.messages[-1]

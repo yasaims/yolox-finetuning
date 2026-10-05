@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.util
 import logging
 import signal
 import threading
@@ -26,6 +27,7 @@ log = logging.getLogger(__name__)
 MAX_MESSAGE_BYTES = 32 * 1024 * 1024
 TRAINING_SHUTDOWN_SECONDS = 30
 SERVER_STOP_GRACE_SECONDS = 5
+ENGINE_PACKAGES = ("torch", "yolox")
 
 
 def build_server(servicer: TrainerServicer, port: int, max_workers: int = 16) -> grpc.Server:
@@ -67,22 +69,21 @@ class _UnavailableInference:
         pass
 
 
+def _engine_installed() -> bool:
+    return all(importlib.util.find_spec(name) is not None for name in ENGINE_PACKAGES)
+
+
 def _build_engine(
     config: TrainerConfig, registry: ModelRegistry, catalog: DatasetCatalog
 ) -> tuple[Callable[[], TrainingRunner], InferenceService]:
-    """Wiring point for the torch-based engine.
-
-    `yolox_trainer.engine.build_runtime(config, registry, catalog)` must return
-    `(runner_factory, inference_service)`. Without torch/YOLOX, training and inference
-    requests fail with FAILED_PRECONDITION.
-    """
-    try:
-        from .engine import build_runtime
-
-        return build_runtime(config, registry, catalog)
-    except ImportError as e:
-        log.warning("engine dependencies unavailable (%s); training and inference are disabled", e)
+    """Builds the torch-based engine; without torch/YOLOX installed, training and inference
+    requests fail with FAILED_PRECONDITION."""
+    if not _engine_installed():
+        log.warning("torch/yolox not installed; training and inference are disabled")
         return _UnavailableRunner, _UnavailableInference()
+    from .engine import build_runtime
+
+    return build_runtime(config, registry, catalog)
 
 
 def serve(config: TrainerConfig) -> None:

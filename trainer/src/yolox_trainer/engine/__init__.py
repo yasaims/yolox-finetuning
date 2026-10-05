@@ -1,7 +1,7 @@
 """Torch/YOLOX-backed training and inference.
 
-Importing this package stays torch-free; `build_runtime` and the submodules that need
-torch or YOLOX import them on use.
+Importing this package and its `detections`, `worker` and `process_runner` submodules does
+not load torch or YOLOX; `exp`, `observable_trainer` and `inference_service` require them.
 """
 from __future__ import annotations
 
@@ -18,10 +18,7 @@ def build_runtime(
     config: TrainerConfig, registry: ModelRegistry, catalog: DatasetCatalog
 ) -> tuple[Callable[[], TrainingRunner], InferenceService]:
     """Returns `(runner_factory, inference_service)`; raises ImportError without torch/YOLOX."""
-    import torch  # noqa: F401
-    import yolox  # noqa: F401
-
-    from ..server import _UnavailableInference
+    from .inference_service import EngineInferenceService
     from .process_runner import ProcessTrainingRunner
 
-    return ProcessTrainingRunner, _UnavailableInference()
+    return ProcessTrainingRunner, EngineInferenceService(registry, catalog, config.device)

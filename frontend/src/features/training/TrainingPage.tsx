@@ -39,11 +39,20 @@ function useTrainingStream(jobId: string | null) {
   return { state, disconnected };
 }
 
-function TrainingStatus({ jobId, state, disconnected }: { jobId: string; state: TrainingState; disconnected: boolean }) {
+interface StatusProps {
+  jobId: string;
+  state: TrainingState;
+  serverState: string | null;
+  disconnected: boolean;
+}
+
+// serverState is the state reported by /trainings/current; the event stream never reports STOPPING.
+export function TrainingStatus({ jobId, state, serverState, disconnected }: StatusProps) {
   const [stopRequested, setStopRequested] = useState(false);
   const [stopError, setStopError] = useState("");
   const active = ACTIVE_STATES.includes(state.state);
-  const badge = active && stopRequested ? "STOPPING" : state.state;
+  const stopping = active && (stopRequested || serverState === "STOPPING");
+  const badge = stopping ? "STOPPING" : state.state;
   const percent = state.totalIters > 0 ? (state.globalIter / state.totalIters) * 100 : 0;
 
   async function stop() {
@@ -69,7 +78,7 @@ function TrainingStatus({ jobId, state, disconnected }: { jobId: string; state: 
       </p>
       {disconnected && active && <p className="muted">Connection lost, retrying...</p>}
       {active && (
-        <button type="button" onClick={stop} disabled={stopRequested}>
+        <button type="button" onClick={stop} disabled={stopping}>
           Stop
         </button>
       )}
@@ -90,6 +99,7 @@ export default function TrainingPage() {
   const { state, disconnected } = useTrainingStream(jobId);
 
   const currentJobId = current.data?.job?.job_id ?? null;
+  const serverState = currentJobId === jobId ? (current.data?.job?.state ?? null) : null;
   useEffect(() => {
     if (jobId === null && currentJobId !== null) setJobId(currentJobId);
   }, [jobId, currentJobId]);
@@ -103,7 +113,7 @@ export default function TrainingPage() {
       {!active && !current.isPending && <TrainingForm onStarted={setJobId} />}
       {jobId && (
         <>
-          <TrainingStatus key={jobId} jobId={jobId} state={state} disconnected={disconnected} />
+          <TrainingStatus key={jobId} jobId={jobId} state={state} serverState={serverState} disconnected={disconnected} />
           <LossChart data={state.lossSeries} />
           <LrChart data={state.lrSeries} />
           <ApChart data={state.evalSeries} />

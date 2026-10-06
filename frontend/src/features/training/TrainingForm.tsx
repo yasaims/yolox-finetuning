@@ -41,8 +41,9 @@ function FormBody({ datasets, defaults, onStarted }: BodyProps) {
 
   const start = useMutation({
     mutationFn: api.startTraining,
-    onSuccess: (result) => {
-      void queryClient.invalidateQueries({ queryKey: ["trainings", "current"] });
+    onSuccess: async (result) => {
+      // The page adopts the server's current job, so it must already be the new one.
+      await queryClient.invalidateQueries({ queryKey: ["trainings", "current"] });
       onStarted(result.job_id);
     },
     onError: (error) => {

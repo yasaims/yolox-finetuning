@@ -130,3 +130,15 @@ def test_process_exit_without_done_fails_job(env: dict) -> None:
     assert env["registry"].list() == []
     summary = supervisor.current()
     assert summary is not None and summary.state is JobState.FAILED
+
+
+def test_process_exit_without_done_after_stop_request_is_cancelled(env: dict) -> None:
+    runner = FakeTrainingRunner([WorkerStarted(1, 2)], wait_for_stop=True, exit_code=-15)
+    supervisor = make_supervisor(env, runner)
+    job_id, _ = supervisor.start("ds", {}, "")
+
+    supervisor.stop(job_id)
+    events = wait_finished(supervisor.event_log(job_id))
+
+    assert events[-1].payload == JobFinished(JobState.CANCELLED, "", "")
+    assert env["registry"].list() == []

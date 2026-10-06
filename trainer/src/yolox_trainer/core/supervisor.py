@@ -207,7 +207,11 @@ class TrainingSupervisor:
         with self._lock:
             if job.done_received:
                 return
-        self._finish(job, JobState.FAILED, "", f"training process exited with code {code}")
+            stopped = job.state is JobState.STOPPING
+        if stopped:
+            self._finish(job, JobState.CANCELLED, "", "")
+        else:
+            self._finish(job, JobState.FAILED, "", f"training process exited with code {code}")
 
     def _handle_done(self, job: _Job, done: WorkerDone) -> None:
         if done.outcome == "failed":

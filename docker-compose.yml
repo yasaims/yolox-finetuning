@@ -26,6 +26,8 @@ services:
       context: .
       dockerfile: trainer/Dockerfile
     shm_size: 2gb
+    init: true
+    stop_grace_period: 45s
     healthcheck:
       test:
         - CMD
@@ -57,7 +59,7 @@ services:
     build:
       context: frontend
     ports:
-      - "8080:80"
+      - "127.0.0.1:8080:80"
     depends_on:
       gateway:
         condition: service_healthy

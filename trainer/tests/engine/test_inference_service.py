@@ -1,6 +1,7 @@
 import json
 from dataclasses import replace
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pytest
@@ -37,7 +38,7 @@ def _record(model_id: str, class_names: list[str], hp: Hyperparameters) -> Model
     )
 
 
-def _register_random_model(registry: ModelRegistry, tmp_path: Path, model_id: str) -> dict:
+def _register_random_model(registry: ModelRegistry, tmp_path: Path, model_id: str) -> dict[str, Any]:
     import torch
 
     from yolox_trainer.engine.exp import build_exp

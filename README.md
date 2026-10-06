@@ -18,6 +18,7 @@ browser ──> nginx + React UI (:8080) ──> gateway (FastAPI: REST + SSE) �
 ## Prerequisites
 
 - Docker Desktop with NVIDIA GPU support (WSL2 backend)
+- At least 30 GB free on the drive holding Docker's disk image. The trainer image is about 7 GB, and Docker Desktop stops responding if its disk image cannot grow during a build. Old trainer builds can be removed with `docker image prune`.
 - [uv](https://docs.astral.sh/uv/)
 - Node 22 (frontend development only)
 

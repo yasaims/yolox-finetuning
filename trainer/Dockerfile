@@ -32,14 +32,16 @@ RUN mkdir -p /app/trainer/src \
 
 COPY trainer/ /app/trainer/
 
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --locked --extra engine
-
 FROM python:3.10-slim-bookworm
 
-COPY --from=builder /app /app
+# The multi-GB venv is its own layer so source changes only add small layers.
+# The project itself is not installed into the venv; it is imported via PYTHONPATH.
+COPY --from=builder /app/.venv /app/.venv
+COPY --from=builder /app/proto /app/proto
+COPY --from=builder /app/trainer /app/trainer
 
 ENV PATH=/app/.venv/bin:$PATH \
+    PYTHONPATH=/app/trainer/src \
     PYTHONUNBUFFERED=1
 
 WORKDIR /app/trainer

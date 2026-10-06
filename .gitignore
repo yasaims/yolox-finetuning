@@ -16,3 +16,4 @@ models/*
 pretrained/*
 !pretrained/.gitkeep
 .superpowers/
+.playwright-mcp/

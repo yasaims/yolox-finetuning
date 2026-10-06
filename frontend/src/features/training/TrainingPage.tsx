@@ -100,11 +100,14 @@ export default function TrainingPage() {
 
   const currentJobId = current.data?.job?.job_id ?? null;
   const serverState = currentJobId === jobId ? (current.data?.job?.state ?? null) : null;
-  useEffect(() => {
-    if (jobId === null && currentJobId !== null) setJobId(currentJobId);
-  }, [jobId, currentJobId]);
-
   const active = jobId !== null && ACTIVE_STATES.includes(state.state);
+
+  // Adopt the server's job only from data fetched after mount, never from stale cache,
+  // and only while nothing is displayed or the displayed job has finished.
+  useEffect(() => {
+    if (!current.isFetchedAfterMount || currentJobId === null || currentJobId === jobId) return;
+    if (jobId === null || !active) setJobId(currentJobId);
+  }, [current.isFetchedAfterMount, currentJobId, jobId, active]);
 
   return (
     <>

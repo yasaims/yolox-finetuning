@@ -13,8 +13,9 @@ export default function DeleteModelButton({ modelId, onDeleted }: Props) {
   const deletion = useMutation({
     mutationFn: () => api.deleteModel(modelId),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["models"] });
+      queryClient.removeQueries({ queryKey: ["models", modelId], exact: true });
       onDeleted?.();
+      await queryClient.invalidateQueries({ queryKey: ["models"] });
     },
     onSettled: () => setConfirming(false),
   });

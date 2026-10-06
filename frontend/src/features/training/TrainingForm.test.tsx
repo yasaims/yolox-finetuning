@@ -64,13 +64,13 @@ describe("TrainingForm", () => {
     });
   });
 
-  it("explains a 409 conflict", async () => {
-    mockApi(Response.json({ detail: "busy" }, { status: 409 }));
+  it("shows the server's reason for a 409 conflict", async () => {
+    mockApi(Response.json({ detail: "pretrained weights not found" }, { status: 409 }));
     renderForm();
 
     fireEvent.click(await screen.findByRole("button", { name: "Start training" }));
 
-    expect(await screen.findByText("a training job is already running")).toBeInTheDocument();
+    expect(await screen.findByText("pretrained weights not found")).toBeInTheDocument();
   });
 
   it("shows the server's validation message", async () => {

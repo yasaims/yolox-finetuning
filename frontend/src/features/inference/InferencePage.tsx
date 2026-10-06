@@ -16,9 +16,11 @@ export default function InferencePage() {
   const [threshold, setThreshold] = useState(0.3);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const [result, setResult] = useState<PredictResponse | null>(null);
+  const [imageError, setImageError] = useState("");
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const selectedModel = modelId || models.data?.[0]?.id || "";
+  const requested = models.data?.some((m) => m.id === modelId) ? modelId : "";
+  const selectedModel = requested || models.data?.[0]?.id || "";
 
   const predict = useMutation({
     mutationFn: (f: File) => api.predict(selectedModel, f, FETCH_THRESHOLD),
@@ -26,17 +28,18 @@ export default function InferencePage() {
 
   useEffect(() => {
     setResult(null);
+    setImage(null);
+    setImageError("");
     predict.reset();
-    if (!file) {
-      setImage(null);
-      return;
-    }
+    if (!file) return;
     const url = URL.createObjectURL(file);
     const img = new Image();
     img.onload = () => setImage(img);
+    img.onerror = () => setImageError("Could not read the selected file as an image.");
     img.src = url;
     return () => {
       img.onload = null;
+      img.onerror = null;
       URL.revokeObjectURL(url);
     };
   }, [file]);
@@ -106,12 +109,13 @@ export default function InferencePage() {
             aria-label="Image"
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
           />
-          <button onClick={() => file && predict.mutate(file, { onSuccess: setResult })} disabled={!file || !selectedModel || predict.isPending}>
+          <button onClick={() => file && predict.mutate(file, { onSuccess: setResult })} disabled={!file || !image || !selectedModel || predict.isPending}>
             {predict.isPending ? "Running..." : "Run"}
           </button>
         </div>
         {models.error && <p className="error">Failed to load models: {models.error.message}</p>}
         {models.data?.length === 0 && <p className="muted">No models yet. Finish a training run to create one.</p>}
+        {imageError && <p className="error">{imageError}</p>}
         {predict.error && <p className="error">Inference failed: {predict.error.message}</p>}
         {result && (
           <div className="toolbar">

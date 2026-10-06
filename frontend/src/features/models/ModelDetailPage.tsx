@@ -92,7 +92,7 @@ export default function ModelDetailPage() {
       <MetadataCard model={model.data} />
       <HyperparametersCard model={model.data} />
       <ApChart data={model.data.eval_history} />
-      <EvaluationPanel modelId={id} />
+      <EvaluationPanel key={id} modelId={id} />
     </>
   );
 }

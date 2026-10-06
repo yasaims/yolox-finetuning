@@ -16,7 +16,6 @@ const NUMERIC_FIELDS: { key: NumericKey; step: string }[] = [
 ];
 
 function startErrorMessage(error: Error): string {
-  if (error instanceof ApiError && error.status === 409) return "a training job is already running";
   return error instanceof ApiError ? error.detail : error.message;
 }
 
@@ -42,7 +41,10 @@ function FormBody({ datasets, defaults, onStarted }: BodyProps) {
 
   const start = useMutation({
     mutationFn: api.startTraining,
-    onSuccess: (result) => onStarted(result.job_id),
+    onSuccess: (result) => {
+      void queryClient.invalidateQueries({ queryKey: ["trainings", "current"] });
+      onStarted(result.job_id);
+    },
     onError: (error) => {
       if (error instanceof ApiError && error.status === 409) {
         void queryClient.invalidateQueries({ queryKey: ["trainings", "current"] });

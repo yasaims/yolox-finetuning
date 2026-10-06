@@ -1,0 +1,33 @@
+[project]
+name = "yolox-gateway"
+version = "0.1.0"
+description = "FastAPI gateway for the YOLOX-Tiny finetuning platform"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "sse-starlette",
+    "python-multipart",
+    "grpcio==1.84.0",
+    "protobuf==7.36.2",
+    "pydantic-settings",
+]
+
+[project.scripts]
+export-openapi = "gateway.export_openapi:main"
+
+[dependency-groups]
+dev = ["pytest", "pytest-asyncio", "httpx", "grpcio-tools==1.84.0"]
+
+[build-system]
+requires = ["uv_build>=0.11.29,<0.12.0"]
+build-backend = "uv_build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["tests"]
+addopts = ["--import-mode=importlib"]
+asyncio_mode = "auto"
+
+[tool.uv.build-backend]
+module-name = "gateway"

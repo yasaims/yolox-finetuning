@@ -1,0 +1,14 @@
+.git
+.superpowers
+docs
+datasets
+models
+pretrained
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/node_modules
+**/dist
+**/*_pb2*.py
+**/*_pb2*.pyi
+**/src/yoloxft

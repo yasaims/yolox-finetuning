@@ -1,0 +1,72 @@
+syntax = "proto3";
+package yoloxft.v1;
+
+service TrainerService {
+  rpc ListDatasets(ListDatasetsRequest) returns (ListDatasetsResponse);
+  rpc GetDefaultHyperparameters(GetDefaultHyperparametersRequest) returns (Hyperparameters);
+  rpc StartTraining(StartTrainingRequest) returns (StartTrainingResponse);
+  rpc GetCurrentJob(GetCurrentJobRequest) returns (GetCurrentJobResponse);
+  rpc StreamTrainingEvents(StreamTrainingEventsRequest) returns (stream TrainingEvent);
+  rpc StopTraining(StopTrainingRequest) returns (StopTrainingResponse);
+  rpc ListModels(ListModelsRequest) returns (ListModelsResponse);
+  rpc GetModel(GetModelRequest) returns (Model);
+  rpc DeleteModel(DeleteModelRequest) returns (DeleteModelResponse);
+  rpc EvaluateModel(EvaluateModelRequest) returns (EvaluationResult);
+  rpc Predict(PredictRequest) returns (PredictResponse);
+}
+
+message ListDatasetsRequest {}
+message Dataset { string name = 1; repeated string class_names = 2; int32 train_images = 3; int32 val_images = 4; }
+message ListDatasetsResponse { repeated Dataset datasets = 1; }
+
+message GetDefaultHyperparametersRequest {}
+message Hyperparameters {
+  optional int32 max_epoch = 1; optional int32 batch_size = 2; optional double learning_rate = 3;
+  optional int32 input_size = 4; optional int32 warmup_epochs = 5; optional int32 no_aug_epochs = 6;
+  optional double mosaic_prob = 7; optional bool enable_mixup = 8; optional bool fp16 = 9; optional int32 seed = 10;
+}
+
+message StartTrainingRequest { string dataset_name = 1; Hyperparameters hyperparameters = 2; string display_name = 3; }
+message StartTrainingResponse { string job_id = 1; Hyperparameters resolved = 2; }
+
+enum JobState {
+  JOB_STATE_UNSPECIFIED = 0; JOB_STATE_STARTING = 1; JOB_STATE_RUNNING = 2; JOB_STATE_STOPPING = 3;
+  JOB_STATE_SUCCEEDED = 4; JOB_STATE_FAILED = 5; JOB_STATE_CANCELLED = 6;
+}
+
+message GetCurrentJobRequest {}
+message JobSummary { string job_id = 1; JobState state = 2; string dataset_name = 3; Hyperparameters hyperparameters = 4; int64 last_seq = 5; int64 started_unix_ms = 6; }
+message GetCurrentJobResponse { optional JobSummary job = 1; }
+
+message StreamTrainingEventsRequest { string job_id = 1; int64 after_seq = 2; }
+message TrainingEvent {
+  string job_id = 1; int64 seq = 2; int64 time_unix_ms = 3;
+  oneof payload { JobStarted started = 10; IterProgress iter = 11; EpochEval eval = 12; JobFinished finished = 13; }
+}
+message JobStarted { string dataset_name = 1; Hyperparameters hyperparameters = 2; int32 max_epoch = 3; int32 iters_per_epoch = 4; }
+message IterProgress { int32 epoch = 1; int32 iter = 2; int64 global_iter = 3; int64 total_iters = 4; double lr = 5; map<string, double> losses = 6; int32 input_size = 7; double eta_seconds = 8; }
+message EpochEval { int32 epoch = 1; double ap50 = 2; double ap50_95 = 3; double best_ap50_95 = 4; }
+message JobFinished { JobState state = 1; string model_id = 2; string error = 3; }
+
+message StopTrainingRequest { string job_id = 1; }
+message StopTrainingResponse {}
+
+message ListModelsRequest {}
+message Model {
+  string id = 1; string display_name = 2; string status = 3; string dataset_name = 4; repeated string class_names = 5;
+  Hyperparameters hyperparameters = 6; int32 epochs_trained = 7; int32 best_epoch = 8; double best_ap50 = 9;
+  double best_ap50_95 = 10; int64 created_unix_ms = 11; repeated EpochEval eval_history = 12;
+}
+message ListModelsResponse { repeated Model models = 1; }
+message GetModelRequest { string model_id = 1; }
+message DeleteModelRequest { string model_id = 1; }
+message DeleteModelResponse {}
+
+message EvaluateModelRequest { string model_id = 1; string dataset_name = 2; string split = 3; }
+message CocoStats { double ap = 1; double ap50 = 2; double ap75 = 3; double ap_small = 4; double ap_medium = 5; double ap_large = 6; double ar1 = 7; double ar10 = 8; double ar100 = 9; double ar_small = 10; double ar_medium = 11; double ar_large = 12; }
+message ClassAp { string class_name = 1; double ap = 2; double ap50 = 3; }
+message EvaluationResult { CocoStats stats = 1; repeated ClassAp per_class = 2; int32 num_images = 3; }
+
+message PredictRequest { string model_id = 1; bytes image = 2; optional float score_threshold = 3; }
+message Detection { float x1 = 1; float y1 = 2; float x2 = 3; float y2 = 4; float score = 5; int32 class_id = 6; string class_name = 7; }
+message PredictResponse { int32 image_width = 1; int32 image_height = 2; repeated Detection detections = 3; }

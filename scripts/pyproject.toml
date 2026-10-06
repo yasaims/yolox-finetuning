@@ -1,0 +1,21 @@
+[project]
+name = "dataset-tools"
+version = "0.1.0"
+description = "Dataset and weights preparation tools"
+requires-python = ">=3.12"
+dependencies = ["httpx", "pillow"]
+
+[project.scripts]
+prepare-balloon = "dataset_tools.balloon:main"
+download-weights = "dataset_tools.download_weights:main"
+e2e-smoke = "dataset_tools.e2e_smoke:main"
+
+[dependency-groups]
+dev = ["pytest", "pycocotools"]
+
+[build-system]
+requires = ["uv_build>=0.11.29,<0.12.0"]
+build-backend = "uv_build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

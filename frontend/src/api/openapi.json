@@ -1,0 +1,1050 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "YOLOX finetuning gateway",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/health": {
+      "get": {
+        "summary": "Health",
+        "operationId": "health_api_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Health Api Health Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/datasets": {
+      "get": {
+        "summary": "List Datasets",
+        "operationId": "list_datasets_api_datasets_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Dataset"
+                  },
+                  "type": "array",
+                  "title": "Response List Datasets Api Datasets Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/hyperparameters/defaults": {
+      "get": {
+        "summary": "Default Hyperparameters",
+        "operationId": "default_hyperparameters_api_hyperparameters_defaults_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Hyperparameters"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/models": {
+      "get": {
+        "summary": "List Models",
+        "operationId": "list_models_api_models_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Model"
+                  },
+                  "type": "array",
+                  "title": "Response List Models Api Models Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/models/{model_id}": {
+      "get": {
+        "summary": "Get Model",
+        "operationId": "get_model_api_models__model_id__get",
+        "parameters": [
+          {
+            "name": "model_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Model Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Model"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete Model",
+        "operationId": "delete_model_api_models__model_id__delete",
+        "parameters": [
+          {
+            "name": "model_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Model Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/models/{model_id}/evaluate": {
+      "post": {
+        "summary": "Evaluate Model",
+        "operationId": "evaluate_model_api_models__model_id__evaluate_post",
+        "parameters": [
+          {
+            "name": "model_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Model Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvaluateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvaluationResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/models/{model_id}/predict": {
+      "post": {
+        "summary": "Predict",
+        "operationId": "predict_api_models__model_id__predict_post",
+        "parameters": [
+          {
+            "name": "model_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Model Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_predict_api_models__model_id__predict_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PredictResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/trainings": {
+      "post": {
+        "summary": "Start Training",
+        "operationId": "start_training_api_trainings_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartTrainingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StartTrainingResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/trainings/current": {
+      "get": {
+        "summary": "Current Training",
+        "operationId": "current_training_api_trainings_current_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentJobResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/trainings/{job_id}/stop": {
+      "post": {
+        "summary": "Stop Training",
+        "operationId": "stop_training_api_trainings__job_id__stop_post",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/trainings/{job_id}/events": {
+      "get": {
+        "summary": "Training Events",
+        "operationId": "training_events_api_trainings__job_id__events_get",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          },
+          {
+            "name": "after_seq",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "After Seq"
+            }
+          },
+          {
+            "name": "last-event-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Last-Event-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Body_predict_api_models__model_id__predict_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          },
+          "score_threshold": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Score Threshold",
+            "default": 0.3
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_predict_api_models__model_id__predict_post"
+      },
+      "ClassAp": {
+        "properties": {
+          "class_name": {
+            "type": "string",
+            "title": "Class Name"
+          },
+          "ap": {
+            "type": "number",
+            "title": "Ap"
+          },
+          "ap50": {
+            "type": "number",
+            "title": "Ap50"
+          }
+        },
+        "type": "object",
+        "required": [
+          "class_name",
+          "ap",
+          "ap50"
+        ],
+        "title": "ClassAp"
+      },
+      "CocoStats": {
+        "properties": {
+          "ap": {
+            "type": "number",
+            "title": "Ap"
+          },
+          "ap50": {
+            "type": "number",
+            "title": "Ap50"
+          },
+          "ap75": {
+            "type": "number",
+            "title": "Ap75"
+          },
+          "ap_small": {
+            "type": "number",
+            "title": "Ap Small"
+          },
+          "ap_medium": {
+            "type": "number",
+            "title": "Ap Medium"
+          },
+          "ap_large": {
+            "type": "number",
+            "title": "Ap Large"
+          },
+          "ar1": {
+            "type": "number",
+            "title": "Ar1"
+          },
+          "ar10": {
+            "type": "number",
+            "title": "Ar10"
+          },
+          "ar100": {
+            "type": "number",
+            "title": "Ar100"
+          },
+          "ar_small": {
+            "type": "number",
+            "title": "Ar Small"
+          },
+          "ar_medium": {
+            "type": "number",
+            "title": "Ar Medium"
+          },
+          "ar_large": {
+            "type": "number",
+            "title": "Ar Large"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ap",
+          "ap50",
+          "ap75",
+          "ap_small",
+          "ap_medium",
+          "ap_large",
+          "ar1",
+          "ar10",
+          "ar100",
+          "ar_small",
+          "ar_medium",
+          "ar_large"
+        ],
+        "title": "CocoStats"
+      },
+      "CurrentJobResponse": {
+        "properties": {
+          "job": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JobSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "job"
+        ],
+        "title": "CurrentJobResponse"
+      },
+      "Dataset": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "class_names": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Class Names"
+          },
+          "train_images": {
+            "type": "integer",
+            "title": "Train Images"
+          },
+          "val_images": {
+            "type": "integer",
+            "title": "Val Images"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "class_names",
+          "train_images",
+          "val_images"
+        ],
+        "title": "Dataset"
+      },
+      "Detection": {
+        "properties": {
+          "x1": {
+            "type": "number",
+            "title": "X1"
+          },
+          "y1": {
+            "type": "number",
+            "title": "Y1"
+          },
+          "x2": {
+            "type": "number",
+            "title": "X2"
+          },
+          "y2": {
+            "type": "number",
+            "title": "Y2"
+          },
+          "score": {
+            "type": "number",
+            "title": "Score"
+          },
+          "class_id": {
+            "type": "integer",
+            "title": "Class Id"
+          },
+          "class_name": {
+            "type": "string",
+            "title": "Class Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "x1",
+          "y1",
+          "x2",
+          "y2",
+          "score",
+          "class_id",
+          "class_name"
+        ],
+        "title": "Detection"
+      },
+      "EpochEval": {
+        "properties": {
+          "epoch": {
+            "type": "integer",
+            "title": "Epoch"
+          },
+          "ap50": {
+            "type": "number",
+            "title": "Ap50"
+          },
+          "ap50_95": {
+            "type": "number",
+            "title": "Ap50 95"
+          },
+          "best_ap50_95": {
+            "type": "number",
+            "title": "Best Ap50 95"
+          }
+        },
+        "type": "object",
+        "required": [
+          "epoch",
+          "ap50",
+          "ap50_95",
+          "best_ap50_95"
+        ],
+        "title": "EpochEval"
+      },
+      "EvaluateRequest": {
+        "properties": {
+          "dataset_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dataset Name"
+          },
+          "split": {
+            "type": "string",
+            "enum": [
+              "val",
+              "train"
+            ],
+            "title": "Split",
+            "default": "val"
+          }
+        },
+        "type": "object",
+        "title": "EvaluateRequest"
+      },
+      "EvaluationResult": {
+        "properties": {
+          "stats": {
+            "$ref": "#/components/schemas/CocoStats"
+          },
+          "per_class": {
+            "items": {
+              "$ref": "#/components/schemas/ClassAp"
+            },
+            "type": "array",
+            "title": "Per Class"
+          },
+          "num_images": {
+            "type": "integer",
+            "title": "Num Images"
+          }
+        },
+        "type": "object",
+        "required": [
+          "stats",
+          "per_class",
+          "num_images"
+        ],
+        "title": "EvaluationResult"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "Hyperparameters": {
+        "properties": {
+          "max_epoch": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Epoch"
+          },
+          "batch_size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Batch Size"
+          },
+          "learning_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Learning Rate"
+          },
+          "input_size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Size"
+          },
+          "warmup_epochs": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Warmup Epochs"
+          },
+          "no_aug_epochs": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "No Aug Epochs"
+          },
+          "mosaic_prob": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mosaic Prob"
+          },
+          "enable_mixup": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enable Mixup"
+          },
+          "fp16": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fp16"
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "Hyperparameters"
+      },
+      "JobSummary": {
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "title": "Job Id"
+          },
+          "state": {
+            "type": "string",
+            "title": "State"
+          },
+          "dataset_name": {
+            "type": "string",
+            "title": "Dataset Name"
+          },
+          "hyperparameters": {
+            "$ref": "#/components/schemas/Hyperparameters"
+          },
+          "last_seq": {
+            "type": "integer",
+            "title": "Last Seq"
+          },
+          "started_unix_ms": {
+            "type": "integer",
+            "title": "Started Unix Ms"
+          }
+        },
+        "type": "object",
+        "required": [
+          "job_id",
+          "state",
+          "dataset_name",
+          "hyperparameters",
+          "last_seq",
+          "started_unix_ms"
+        ],
+        "title": "JobSummary"
+      },
+      "Model": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "dataset_name": {
+            "type": "string",
+            "title": "Dataset Name"
+          },
+          "class_names": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Class Names"
+          },
+          "hyperparameters": {
+            "$ref": "#/components/schemas/Hyperparameters"
+          },
+          "epochs_trained": {
+            "type": "integer",
+            "title": "Epochs Trained"
+          },
+          "best_epoch": {
+            "type": "integer",
+            "title": "Best Epoch"
+          },
+          "best_ap50": {
+            "type": "number",
+            "title": "Best Ap50"
+          },
+          "best_ap50_95": {
+            "type": "number",
+            "title": "Best Ap50 95"
+          },
+          "created_unix_ms": {
+            "type": "integer",
+            "title": "Created Unix Ms"
+          },
+          "eval_history": {
+            "items": {
+              "$ref": "#/components/schemas/EpochEval"
+            },
+            "type": "array",
+            "title": "Eval History"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "display_name",
+          "status",
+          "dataset_name",
+          "class_names",
+          "hyperparameters",
+          "epochs_trained",
+          "best_epoch",
+          "best_ap50",
+          "best_ap50_95",
+          "created_unix_ms",
+          "eval_history"
+        ],
+        "title": "Model"
+      },
+      "PredictResponse": {
+        "properties": {
+          "image_width": {
+            "type": "integer",
+            "title": "Image Width"
+          },
+          "image_height": {
+            "type": "integer",
+            "title": "Image Height"
+          },
+          "detections": {
+            "items": {
+              "$ref": "#/components/schemas/Detection"
+            },
+            "type": "array",
+            "title": "Detections"
+          }
+        },
+        "type": "object",
+        "required": [
+          "image_width",
+          "image_height",
+          "detections"
+        ],
+        "title": "PredictResponse"
+      },
+      "StartTrainingRequest": {
+        "properties": {
+          "dataset_name": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Dataset Name"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name",
+            "default": ""
+          },
+          "hyperparameters": {
+            "$ref": "#/components/schemas/Hyperparameters"
+          }
+        },
+        "type": "object",
+        "required": [
+          "dataset_name"
+        ],
+        "title": "StartTrainingRequest"
+      },
+      "StartTrainingResult": {
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "title": "Job Id"
+          },
+          "hyperparameters": {
+            "$ref": "#/components/schemas/Hyperparameters"
+          }
+        },
+        "type": "object",
+        "required": [
+          "job_id",
+          "hyperparameters"
+        ],
+        "title": "StartTrainingResult"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}
